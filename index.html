@@ -520,7 +520,7 @@
         const scene = new THREE.Scene();
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 0);  // Camera at origin
+        camera.position.set(0, 0, 8);
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -534,20 +534,30 @@
         directionalLight.position.set(0, 1, 1);
         scene.add(directionalLight);
 
-        // Scene graph hierarchy matching desktop OpenGL transform order:
-        // Scene -> View Rotation -> Pan -> Distance -> Base Rotation -> Model
-        const viewRotationGroup = new THREE.Group();
-        scene.add(viewRotationGroup);
+        // Scene graph hierarchy matching desktop OpenGL matrix order:
+        // Desktop: Translate(pan) * Translate(0,0,-8) * Rotate(view) * Rotate(base) * Scale
+        //
+        // In Three.js:
+        // - View rotation: camera orbits around origin (0,0,0)
+        // - Pan: applied to panGroup which contains the model
+        // - Base rotation: baseRotationGroup for model rotation
+        //
+        // Hierarchy (matching desktop OpenGL order):
+        //   scene
+        //     └── panGroup (screen space offset - glTranslatef pan)
+        //         └── viewRotationGroup (view rotation quaternion - g_viewRotationQuat.applyRotation())
+        //             └── baseRotationGroup (model rotation - glRotatef base)
+        //                 └── centeringGroup (center offset)
+        //                     └── currentModel (scale)
 
-        const panGroup = new THREE.Group();
-        viewRotationGroup.add(panGroup);
+        const panGroup = new THREE.Group();  // Pan offset (screen space)
+        scene.add(panGroup);
 
-        const distanceGroup = new THREE.Group();
-        distanceGroup.position.z = -8;  // Camera distance (like glTranslatef(0,0,-8))
-        panGroup.add(distanceGroup);
+        const viewRotationGroup = new THREE.Group();  // View rotation (quaternion)
+        panGroup.add(viewRotationGroup);
 
-        const baseRotationGroup = new THREE.Group();
-        distanceGroup.add(baseRotationGroup);
+        const baseRotationGroup = new THREE.Group();  // Base rotation (Blender-style XYZ)
+        viewRotationGroup.add(baseRotationGroup);
 
         // Model itself
         let currentModel = null;
@@ -556,6 +566,7 @@
 
         // State variables
         let viewRotX = 20, viewRotY = 30;
+        let viewRotationQuat = new THREE.Quaternion(); // Quaternion for view rotation (like desktop)
         let panX = 0, panY = 0;
         let baseRotX = 0, baseRotY = 0, baseRotZ = 0;
         let modelScale = 1;
@@ -645,37 +656,24 @@
                 const dx = e.clientX - lastMouseX;
                 const dy = e.clientY - lastMouseY;
 
-                // Quaternion-based rotation for smooth orbiting
-                // Create delta rotations in camera space
-                const deltaRotationQuaternion = new THREE.Quaternion()
-                    .setFromEuler(new THREE.Euler(
-                        dy * 0.5 * Math.PI / 180,  // pitch
-                        dx * 0.5 * Math.PI / 180,  // yaw
-                        0,
-                        'YXZ'
-                    ));
-
-                // Apply delta rotation to current quaternion
-                viewRotationGroup.quaternion.multiplyQuaternions(
-                    deltaRotationQuaternion,
-                    viewRotationGroup.quaternion
+                // Create delta quaternion from mouse movement (like desktop: dy * 0.5, dx * 0.5)
+                const DEG2RAD = Math.PI / 180;
+                const deltaQuat = new THREE.Quaternion().setFromEuler(
+                    new THREE.Euler(dy * 0.5 * DEG2RAD, dx * 0.5 * DEG2RAD, 0, 'YXZ')
                 );
 
+                // Apply delta to current quaternion: deltaQuat * viewRotationQuat (like desktop)
+                viewRotationQuat.multiplyQuaternions(deltaQuat, viewRotationQuat);
+
                 // Extract euler angles for display
-                const euler = new THREE.Euler().setFromQuaternion(viewRotationGroup.quaternion, 'YXZ');
+                const euler = new THREE.Euler().setFromQuaternion(viewRotationQuat, 'YXZ');
                 viewRotX = euler.x * 180 / Math.PI;
                 viewRotY = euler.y * 180 / Math.PI;
 
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
 
-                // Update displays
-                document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(1);
-                document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(1);
-                document.getElementById('viewRotXValue').textContent = viewRotX.toFixed(0) + '°';
-                document.getElementById('viewRotYValue').textContent = viewRotY.toFixed(0) + '°';
-                viewRotXSlider.value = viewRotX;
-                viewRotYSlider.value = viewRotY;
+                updateViewRotation();
             } else if (isPanning) {
                 const dx = e.clientX - lastMouseX;
                 const dy = e.clientY - lastMouseY;
@@ -701,9 +699,7 @@
             modelScale = Math.max(0.01, Math.min(10, modelScale + delta));
             scaleSlider.value = modelScale;
             document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
-            if (currentModel) {
-                currentModel.scale.setScalar(modelScale);
-            }
+            baseRotationGroup.scale.setScalar(modelScale);
         });
 
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -774,32 +770,24 @@
                     touchMoved = true;
                 }
 
-                const deltaRotationQuaternion = new THREE.Quaternion()
-                    .setFromEuler(new THREE.Euler(
-                        dy * 0.5 * Math.PI / 180,
-                        dx * 0.5 * Math.PI / 180,
-                        0,
-                        'YXZ'
-                    ));
-
-                viewRotationGroup.quaternion.multiplyQuaternions(
-                    deltaRotationQuaternion,
-                    viewRotationGroup.quaternion
+                // Create delta quaternion from touch movement (like desktop)
+                const DEG2RAD = Math.PI / 180;
+                const deltaQuat = new THREE.Quaternion().setFromEuler(
+                    new THREE.Euler(dy * 0.5 * DEG2RAD, dx * 0.5 * DEG2RAD, 0, 'YXZ')
                 );
 
-                const euler = new THREE.Euler().setFromQuaternion(viewRotationGroup.quaternion, 'YXZ');
+                // Apply delta to current quaternion: deltaQuat * viewRotationQuat
+                viewRotationQuat.multiplyQuaternions(deltaQuat, viewRotationQuat);
+
+                // Extract euler angles for display
+                const euler = new THREE.Euler().setFromQuaternion(viewRotationQuat, 'YXZ');
                 viewRotX = euler.x * 180 / Math.PI;
                 viewRotY = euler.y * 180 / Math.PI;
 
                 lastTouchX = e.touches[0].clientX;
                 lastTouchY = e.touches[0].clientY;
 
-                document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(1);
-                document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(1);
-                document.getElementById('viewRotXValue').textContent = viewRotX.toFixed(0) + '°';
-                document.getElementById('viewRotYValue').textContent = viewRotY.toFixed(0) + '°';
-                viewRotXSlider.value = viewRotX;
-                viewRotYSlider.value = viewRotY;
+                updateViewRotation();
             } else if (e.touches.length === 2 && isTouchPanning) {
                 // Two fingers - pinch to zoom
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -811,9 +799,7 @@
                     modelScale = Math.max(0.01, Math.min(10, touchStartScale * scale));
                     scaleSlider.value = modelScale;
                     document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
-                    if (currentModel) {
-                        currentModel.scale.setScalar(modelScale);
-                    }
+                    baseRotationGroup.scale.setScalar(modelScale);
                 }
 
                 // Two fingers - pan (center point movement)
@@ -925,11 +911,31 @@
 
         viewRotXSlider.oninput = () => {
             viewRotX = parseFloat(viewRotXSlider.value);
+
+            // Update quaternion from slider value
+            const DEG2RAD = Math.PI / 180;
+            viewRotationQuat.setFromEuler(new THREE.Euler(
+                viewRotX * DEG2RAD,
+                viewRotY * DEG2RAD,
+                0,
+                'YXZ'
+            ));
+
             updateViewRotation();
         };
 
         viewRotYSlider.oninput = () => {
             viewRotY = parseFloat(viewRotYSlider.value);
+
+            // Update quaternion from slider value
+            const DEG2RAD = Math.PI / 180;
+            viewRotationQuat.setFromEuler(new THREE.Euler(
+                viewRotX * DEG2RAD,
+                viewRotY * DEG2RAD,
+                0,
+                'YXZ'
+            ));
+
             updateViewRotation();
         };
 
@@ -951,9 +957,7 @@
         scaleSlider.oninput = () => {
             modelScale = parseFloat(scaleSlider.value);
             document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
-            if (currentModel) {
-                currentModel.scale.setScalar(modelScale);
-            }
+            baseRotationGroup.scale.setScalar(modelScale);
         };
 
         autoSpinCheckbox.onchange = () => {
@@ -1018,6 +1022,16 @@
         document.getElementById('resetViewRotation').onclick = () => {
             viewRotX = 20;
             viewRotY = 30;
+
+            // Reset quaternion to match the euler angles
+            const DEG2RAD = Math.PI / 180;
+            viewRotationQuat.setFromEuler(new THREE.Euler(
+                viewRotX * DEG2RAD,
+                viewRotY * DEG2RAD,
+                0,
+                'YXZ'
+            ));
+
             updateViewRotation();
         };
 
@@ -1029,6 +1043,8 @@
             document.getElementById('panYValue').textContent = panY.toFixed(2);
             document.getElementById('panXDisplay').textContent = panX.toFixed(2);
             document.getElementById('panYDisplay').textContent = panY.toFixed(2);
+
+            // Apply pan to panGroup (not camera) - screen space movement
             panGroup.position.set(panX, panY, 0);
         }
 
@@ -1040,14 +1056,8 @@
             document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(1);
             document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(1);
 
-            // Convert euler angles to quaternion
-            const euler = new THREE.Euler(
-                viewRotX * Math.PI / 180,
-                viewRotY * Math.PI / 180,
-                0,
-                'YXZ'
-            );
-            viewRotationGroup.quaternion.setFromEuler(euler);
+            // Apply quaternion to viewRotationGroup (like desktop applyRotation)
+            viewRotationGroup.quaternion.copy(viewRotationQuat);
         }
 
         function updateBaseRotation() {
@@ -1085,12 +1095,25 @@
                 }
 
                 currentModel = gltf.scene;
-                baseRotationGroup.add(currentModel);
 
-                // Center model
+                // Center model using a centering group (like desktop glTranslatef)
                 const box = new THREE.Box3().setFromObject(currentModel);
                 const center = box.getCenter(new THREE.Vector3());
-                currentModel.position.sub(center);
+                const size = box.getSize(new THREE.Vector3());
+                console.log('Model bounding box:', box);
+                console.log('Model center:', center);
+                console.log('Model size:', size);
+
+                // Create centering group that offsets the model to put its center at origin
+                const centeringGroup = new THREE.Group();
+                centeringGroup.position.set(-center.x, -center.y, -center.z);
+
+                // Add model to centering group (model stays at 0,0,0 in its own space)
+                centeringGroup.add(currentModel);
+                console.log('Model centered via group offset:', centeringGroup.position);
+
+                // Add centering group to base rotation group
+                baseRotationGroup.add(centeringGroup);
 
                 // Extract empties - search in raw gltf.parser data AND scene.traverse
                 empties = [];
@@ -1159,21 +1182,18 @@
                     }
                 });
 
-                const fileName = file ? file.name : 'mks.glb';
+                const fileName = file ? file.name : url.split('/').pop();
                 statsInfo.innerHTML = `Model: ${fileName}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}`;
                 document.getElementById('modelName').textContent = fileName;
                 document.getElementById('triangles').textContent = Math.floor(triangles).toLocaleString();
 
-                if (file) {
-                    URL.revokeObjectURL(url);
-                }
+                if (file) URL.revokeObjectURL(url);
             }, undefined, (error) => {
                 loading.style.display = 'none';
                 console.error('Error loading model:', error);
             });
         }
 
-        // File input handler (kept for manual loading if needed)
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1181,8 +1201,22 @@
             loadModelFromFile(file, url);
         };
 
-        // Auto-load model on page load
+        // Auto-load mks.glb on page load
         window.addEventListener('DOMContentLoaded', () => {
+            // Initialize quaternion from initial euler angles
+            const DEG2RAD = Math.PI / 180;
+            viewRotationQuat.setFromEuler(new THREE.Euler(
+                viewRotX * DEG2RAD,
+                viewRotY * DEG2RAD,
+                0,
+                'YXZ'
+            ));
+
+            // Initialize camera position
+            updateViewRotation();
+            updatePan();
+
+            // Load default model
             loadModelFromFile(null, 'mks.glb');
         });
 
@@ -1207,6 +1241,16 @@
             // Auto-spin
             if (autoSpin) {
                 viewRotY += spinSpeed;
+
+                // Update quaternion from euler angles
+                const DEG2RAD = Math.PI / 180;
+                viewRotationQuat.setFromEuler(new THREE.Euler(
+                    viewRotX * DEG2RAD,
+                    viewRotY * DEG2RAD,
+                    0,
+                    'YXZ'
+                ));
+
                 updateViewRotation();
             }
 
