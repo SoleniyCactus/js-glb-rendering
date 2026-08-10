@@ -520,7 +520,7 @@
         const scene = new THREE.Scene();
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 8);
+        camera.position.set(0, 0, 0);  // Camera at origin
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -534,15 +534,20 @@
         directionalLight.position.set(0, 1, 1);
         scene.add(directionalLight);
 
-        // Scene graph hierarchy matching desktop: Pan -> View Rotation -> Base Rotation -> Model
-        const panGroup = new THREE.Group();
-        scene.add(panGroup);
-
+        // Scene graph hierarchy matching desktop OpenGL transform order:
+        // Scene -> View Rotation -> Pan -> Distance -> Base Rotation -> Model
         const viewRotationGroup = new THREE.Group();
-        panGroup.add(viewRotationGroup);
+        scene.add(viewRotationGroup);
+
+        const panGroup = new THREE.Group();
+        viewRotationGroup.add(panGroup);
+
+        const distanceGroup = new THREE.Group();
+        distanceGroup.position.z = -8;  // Camera distance (like glTranslatef(0,0,-8))
+        panGroup.add(distanceGroup);
 
         const baseRotationGroup = new THREE.Group();
-        viewRotationGroup.add(baseRotationGroup);
+        distanceGroup.add(baseRotationGroup);
 
         // Model itself
         let currentModel = null;
