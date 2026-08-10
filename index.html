@@ -1068,12 +1068,8 @@
         // Load model
         const loader = new GLTFLoader();
 
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
+        function loadModelFromFile(file, url) {
             loading.style.display = 'block';
-            const url = URL.createObjectURL(file);
 
             loader.load(url, (gltf) => {
                 loading.style.display = 'none';
@@ -1158,16 +1154,32 @@
                     }
                 });
 
-                statsInfo.innerHTML = `Model: ${file.name}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}`;
-                document.getElementById('modelName').textContent = file.name;
+                const fileName = file ? file.name : 'mks.glb';
+                statsInfo.innerHTML = `Model: ${fileName}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}`;
+                document.getElementById('modelName').textContent = fileName;
                 document.getElementById('triangles').textContent = Math.floor(triangles).toLocaleString();
 
-                URL.revokeObjectURL(url);
+                if (file) {
+                    URL.revokeObjectURL(url);
+                }
             }, undefined, (error) => {
                 loading.style.display = 'none';
                 console.error('Error loading model:', error);
             });
+        }
+
+        // File input handler (kept for manual loading if needed)
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            loadModelFromFile(file, url);
         };
+
+        // Auto-load model on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadModelFromFile(null, 'mks.glb');
+        });
 
         // Resize handler
         window.addEventListener('resize', () => {
