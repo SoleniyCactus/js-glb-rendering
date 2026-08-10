@@ -228,6 +228,34 @@
             cursor: pointer;
         }
 
+        .value-input {
+            width: 60px;
+            padding: 2px 6px;
+            background: #1E293B;
+            border: 1px solid rgba(248, 250, 252, 0.1);
+            border-radius: 4px;
+            color: #22D3EE;
+            font-size: 12px;
+            text-align: center;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+        }
+
+        .value-input:focus {
+            outline: none;
+            border-color: #22D3EE;
+        }
+
+        /* Remove spinner arrows for number inputs */
+        .value-input::-webkit-outer-spin-button,
+        .value-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .value-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         .debug {
             position: fixed;
             bottom: 20px;
@@ -392,11 +420,11 @@
 
         <div class="section-title">Position</div>
         <div class="control-group">
-            <label>Pos X <span class="value" id="panXValue">0.00</span></label>
+            <label>Pos X <input type="number" class="value-input" id="panXInput" value="0.00" step="0.1"></label>
             <input type="range" id="panX" min="-10" max="10" value="0" step="0.1">
         </div>
         <div class="control-group">
-            <label>Pos Y <span class="value" id="panYValue">0.00</span></label>
+            <label>Pos Y <input type="number" class="value-input" id="panYInput" value="0.00" step="0.1"></label>
             <input type="range" id="panY" min="-10" max="10" value="0" step="0.1">
         </div>
         <button class="button" id="resetPosition">Reset Position</button>
@@ -404,7 +432,7 @@
         <div class="separator"></div>
 
         <div class="control-group">
-            <label>Model Scale <span class="value" id="scaleValue">1.00</span></label>
+            <label>Model Scale <input type="number" class="value-input" id="scaleInput" value="1.00" step="0.01" min="0.01" max="10"></label>
             <input type="range" id="scale" min="0.01" max="10" value="1" step="0.01">
         </div>
 
@@ -415,7 +443,7 @@
             <label for="autoSpin">Auto-Spin</label>
         </div>
         <div class="control-group" id="spinSpeedGroup" style="display: none;">
-            <label>Spin Speed <span class="value" id="spinSpeedValue">1.0</span> <span class="value" id="spinDirection">Right</span></label>
+            <label>Spin Speed <input type="number" class="value-input" id="spinSpeedInput" value="1.0" step="0.1" min="-5" max="5"> <span class="value" id="spinDirection">Right</span></label>
             <input type="range" id="spinSpeed" min="-5" max="5" value="1" step="0.1">
         </div>
 
@@ -423,15 +451,15 @@
 
         <div class="section-title">Base Rotation (Blender-style)</div>
         <div class="control-group">
-            <label>Rotation X <span class="value" id="baseRotXValue">0°</span></label>
+            <label>Rotation X <input type="number" class="value-input" id="baseRotXInput" value="0" step="1" min="-180" max="180">°</label>
             <input type="range" id="baseRotX" min="-180" max="180" value="0" step="1">
         </div>
         <div class="control-group">
-            <label>Rotation Y <span class="value" id="baseRotYValue">0°</span></label>
+            <label>Rotation Y <input type="number" class="value-input" id="baseRotYInput" value="0" step="1" min="-180" max="180">°</label>
             <input type="range" id="baseRotY" min="-180" max="180" value="0" step="1">
         </div>
         <div class="control-group">
-            <label>Rotation Z <span class="value" id="baseRotZValue">0°</span></label>
+            <label>Rotation Z <input type="number" class="value-input" id="baseRotZInput" value="0" step="1" min="-180" max="180">°</label>
             <input type="range" id="baseRotZ" min="-180" max="180" value="0" step="1">
         </div>
         <button class="button" id="resetBaseRotation">Reset Base Rotation</button>
@@ -440,11 +468,11 @@
 
         <div class="section-title">View Rotation</div>
         <div class="control-group">
-            <label>Pitch (X) <span class="value" id="viewRotXValue">20°</span></label>
+            <label>Pitch (X) <input type="number" class="value-input" id="viewRotXInput" value="20" step="1" min="-180" max="180">°</label>
             <input type="range" id="viewRotX" min="-180" max="180" value="20" step="1">
         </div>
         <div class="control-group">
-            <label>Yaw (Y) <span class="value" id="viewRotYValue">30°</span></label>
+            <label>Yaw (Y) <input type="number" class="value-input" id="viewRotYInput" value="30" step="1" min="-180" max="180">°</label>
             <input type="range" id="viewRotY" min="-180" max="180" value="30" step="1">
         </div>
         <button class="button" id="resetViewRotation">Reset View Rotation</button>
@@ -606,14 +634,20 @@
         const toggleBtn = document.querySelector('.toggle-controls');
 
         // Toggle controls visibility (for all devices now)
-        if (toggleBtn) {
+        console.log('toggleBtn:', toggleBtn);
+        console.log('controlsPanel:', controlsPanel);
+        if (toggleBtn && controlsPanel) {
             // Initialize icon based on current state
             toggleBtn.textContent = controlsPanel.classList.contains('hidden') ? '☰' : '✕';
 
             toggleBtn.addEventListener('click', () => {
+                console.log('Toggle button clicked!');
                 controlsPanel.classList.toggle('hidden');
                 toggleBtn.textContent = controlsPanel.classList.contains('hidden') ? '☰' : '✕';
+                console.log('Panel hidden:', controlsPanel.classList.contains('hidden'));
             });
+        } else {
+            console.error('toggleBtn or controlsPanel not found!');
         }
 
         // Get all control elements
@@ -633,6 +667,24 @@
         const emptyLabelColorPicker = document.getElementById('emptyLabelColor');
         const emptyHoverColorPicker = document.getElementById('emptyHoverColor');
         const hoverRadiusColorPicker = document.getElementById('hoverRadiusColor');
+
+        // Get number input elements
+        const panXInput = document.getElementById('panXInput');
+        const panYInput = document.getElementById('panYInput');
+        const scaleInput = document.getElementById('scaleInput');
+        const spinSpeedInput = document.getElementById('spinSpeedInput');
+        const baseRotXInput = document.getElementById('baseRotXInput');
+        const baseRotYInput = document.getElementById('baseRotYInput');
+        const baseRotZInput = document.getElementById('baseRotZInput');
+        const viewRotXInput = document.getElementById('viewRotXInput');
+        const viewRotYInput = document.getElementById('viewRotYInput');
+
+        // Safety check - ensure all inputs exist
+        if (!panXInput || !panYInput || !scaleInput || !spinSpeedInput ||
+            !baseRotXInput || !baseRotYInput || !baseRotZInput ||
+            !viewRotXInput || !viewRotYInput) {
+            console.error('Some input elements are missing!');
+        }
 
         // Mouse events
         canvas.addEventListener('mousedown', (e) => {
@@ -698,7 +750,7 @@
             const delta = e.deltaY * -0.001;
             modelScale = Math.max(0.01, Math.min(10, modelScale + delta));
             scaleSlider.value = modelScale;
-            document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
+            scaleInput.value = modelScale.toFixed(2);
             baseRotationGroup.scale.setScalar(modelScale);
         });
 
@@ -798,7 +850,7 @@
                     const scale = currentDistance / touchStartDistance;
                     modelScale = Math.max(0.01, Math.min(10, touchStartScale * scale));
                     scaleSlider.value = modelScale;
-                    document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
+                    scaleInput.value = modelScale.toFixed(2);
                     baseRotationGroup.scale.setScalar(modelScale);
                 }
 
@@ -909,6 +961,25 @@
             updatePan();
         };
 
+        // Number input events - Pan
+        panXInput.oninput = () => {
+            const value = parseFloat(panXInput.value);
+            if (!isNaN(value)) {
+                panX = Math.max(-10, Math.min(10, value));
+                panXSlider.value = panX;
+                updatePan();
+            }
+        };
+
+        panYInput.oninput = () => {
+            const value = parseFloat(panYInput.value);
+            if (!isNaN(value)) {
+                panY = Math.max(-10, Math.min(10, value));
+                panYSlider.value = panY;
+                updatePan();
+            }
+        };
+
         viewRotXSlider.oninput = () => {
             viewRotX = parseFloat(viewRotXSlider.value);
 
@@ -939,6 +1010,43 @@
             updateViewRotation();
         };
 
+        // Number input events - View Rotation
+        viewRotXInput.oninput = () => {
+            const value = parseFloat(viewRotXInput.value);
+            if (!isNaN(value)) {
+                viewRotX = Math.max(-180, Math.min(180, value));
+                viewRotXSlider.value = viewRotX;
+
+                const DEG2RAD = Math.PI / 180;
+                viewRotationQuat.setFromEuler(new THREE.Euler(
+                    viewRotX * DEG2RAD,
+                    viewRotY * DEG2RAD,
+                    0,
+                    'YXZ'
+                ));
+
+                updateViewRotation();
+            }
+        };
+
+        viewRotYInput.oninput = () => {
+            const value = parseFloat(viewRotYInput.value);
+            if (!isNaN(value)) {
+                viewRotY = Math.max(-180, Math.min(180, value));
+                viewRotYSlider.value = viewRotY;
+
+                const DEG2RAD = Math.PI / 180;
+                viewRotationQuat.setFromEuler(new THREE.Euler(
+                    viewRotX * DEG2RAD,
+                    viewRotY * DEG2RAD,
+                    0,
+                    'YXZ'
+                ));
+
+                updateViewRotation();
+            }
+        };
+
         baseRotXSlider.oninput = () => {
             baseRotX = parseFloat(baseRotXSlider.value);
             updateBaseRotation();
@@ -954,10 +1062,49 @@
             updateBaseRotation();
         };
 
+        // Number input events - Base Rotation
+        baseRotXInput.oninput = () => {
+            const value = parseFloat(baseRotXInput.value);
+            if (!isNaN(value)) {
+                baseRotX = Math.max(-180, Math.min(180, value));
+                baseRotXSlider.value = baseRotX;
+                updateBaseRotation();
+            }
+        };
+
+        baseRotYInput.oninput = () => {
+            const value = parseFloat(baseRotYInput.value);
+            if (!isNaN(value)) {
+                baseRotY = Math.max(-180, Math.min(180, value));
+                baseRotYSlider.value = baseRotY;
+                updateBaseRotation();
+            }
+        };
+
+        baseRotZInput.oninput = () => {
+            const value = parseFloat(baseRotZInput.value);
+            if (!isNaN(value)) {
+                baseRotZ = Math.max(-180, Math.min(180, value));
+                baseRotZSlider.value = baseRotZ;
+                updateBaseRotation();
+            }
+        };
+
         scaleSlider.oninput = () => {
             modelScale = parseFloat(scaleSlider.value);
             document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
             baseRotationGroup.scale.setScalar(modelScale);
+        };
+
+        // Number input events - Scale
+        scaleInput.oninput = () => {
+            const value = parseFloat(scaleInput.value);
+            if (!isNaN(value)) {
+                modelScale = Math.max(0.01, Math.min(10, value));
+                scaleSlider.value = modelScale;
+                scaleInput.value = modelScale.toFixed(2);
+                baseRotationGroup.scale.setScalar(modelScale);
+            }
         };
 
         autoSpinCheckbox.onchange = () => {
@@ -969,6 +1116,17 @@
             spinSpeed = parseFloat(spinSpeedSlider.value);
             document.getElementById('spinSpeedValue').textContent = spinSpeed.toFixed(1);
             document.getElementById('spinDirection').textContent = spinSpeed < 0 ? 'Left' : 'Right';
+        };
+
+        // Number input events - Spin Speed
+        spinSpeedInput.oninput = () => {
+            const value = parseFloat(spinSpeedInput.value);
+            if (!isNaN(value)) {
+                spinSpeed = Math.max(-5, Math.min(5, value));
+                spinSpeedSlider.value = spinSpeed;
+                spinSpeedInput.value = spinSpeed.toFixed(1);
+                document.getElementById('spinDirection').textContent = spinSpeed < 0 ? 'Left' : 'Right';
+            }
         };
 
         showDebugCheckbox.onchange = () => {
@@ -1039,8 +1197,8 @@
         function updatePan() {
             panXSlider.value = panX;
             panYSlider.value = panY;
-            document.getElementById('panXValue').textContent = panX.toFixed(2);
-            document.getElementById('panYValue').textContent = panY.toFixed(2);
+            panXInput.value = panX.toFixed(2);
+            panYInput.value = panY.toFixed(2);
             document.getElementById('panXDisplay').textContent = panX.toFixed(2);
             document.getElementById('panYDisplay').textContent = panY.toFixed(2);
 
@@ -1051,8 +1209,8 @@
         function updateViewRotation() {
             viewRotXSlider.value = viewRotX;
             viewRotYSlider.value = viewRotY;
-            document.getElementById('viewRotXValue').textContent = viewRotX.toFixed(0) + '°';
-            document.getElementById('viewRotYValue').textContent = viewRotY.toFixed(0) + '°';
+            viewRotXInput.value = viewRotX.toFixed(0);
+            viewRotYInput.value = viewRotY.toFixed(0);
             document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(1);
             document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(1);
 
@@ -1064,9 +1222,9 @@
             baseRotXSlider.value = baseRotX;
             baseRotYSlider.value = baseRotY;
             baseRotZSlider.value = baseRotZ;
-            document.getElementById('baseRotXValue').textContent = baseRotX.toFixed(0) + '°';
-            document.getElementById('baseRotYValue').textContent = baseRotY.toFixed(0) + '°';
-            document.getElementById('baseRotZValue').textContent = baseRotZ.toFixed(0) + '°';
+            baseRotXInput.value = baseRotX.toFixed(0);
+            baseRotYInput.value = baseRotY.toFixed(0);
+            baseRotZInput.value = baseRotZ.toFixed(0);
 
             baseRotationGroup.rotation.order = 'XYZ';
             baseRotationGroup.rotation.x = baseRotX * Math.PI / 180;
@@ -1201,24 +1359,21 @@
             loadModelFromFile(file, url);
         };
 
-        // Auto-load mks.glb on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            // Initialize quaternion from initial euler angles
-            const DEG2RAD = Math.PI / 180;
-            viewRotationQuat.setFromEuler(new THREE.Euler(
-                viewRotX * DEG2RAD,
-                viewRotY * DEG2RAD,
-                0,
-                'YXZ'
-            ));
+        // Initialize quaternion from initial euler angles
+        const DEG2RAD = Math.PI / 180;
+        viewRotationQuat.setFromEuler(new THREE.Euler(
+            viewRotX * DEG2RAD,
+            viewRotY * DEG2RAD,
+            0,
+            'YXZ'
+        ));
 
-            // Initialize camera position
-            updateViewRotation();
-            updatePan();
+        // Initialize camera position
+        updateViewRotation();
+        updatePan();
 
-            // Load default model
-            loadModelFromFile(null, 'mks.glb');
-        });
+        // Load default model
+        loadModelFromFile(null, 'mks.glb');
 
         // Resize handler
         window.addEventListener('resize', () => {
