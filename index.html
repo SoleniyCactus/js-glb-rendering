@@ -719,7 +719,12 @@
 
         // Mouse events
         canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0 || e.button === 2) { // LMB or RMB
+            if ((e.button === 0 || e.button === 2) && e.shiftKey) { // Shift + LMB/RMB
+                isPanning = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                e.preventDefault();
+            } else if (e.button === 0 || e.button === 2) { // LMB or RMB
                 isDragging = true;
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
@@ -773,7 +778,7 @@
 
         canvas.addEventListener('mouseup', (e) => {
             if (e.button === 0 || e.button === 2) isDragging = false;
-            if (e.button === 1) isPanning = false;
+            if (e.button === 0 || e.button === 1 || e.button === 2) isPanning = false;
         });
 
         canvas.addEventListener('wheel', (e) => {
