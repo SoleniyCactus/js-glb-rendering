@@ -296,10 +296,16 @@
 
         .empty-label {
             position: absolute;
+            z-index: 7;
+            box-sizing: border-box;
+            padding: 4px 8px;
             font-size: 12px;
             color: #FFFF00;
             font-family: 'SF Mono', 'Consolas', monospace;
             pointer-events: none;
+            background: rgba(15, 23, 42, 0.94);
+            border: 1px solid rgba(34, 211, 238, 0.45);
+            border-radius: 999px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
             cursor: pointer;
             transition: color 0.1s;
@@ -307,6 +313,29 @@
 
         .empty-label.hovered {
             color: #00FFFF;
+            border-color: rgba(34, 211, 238, 0.8);
+        }
+
+        .empty-label-description {
+            display: none;
+            margin-top: 2px;
+            max-width: min(360px, calc(100vw - 32px));
+            padding: 6px 8px;
+            color: #E2E8F0;
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: center;
+            white-space: pre-wrap;
+            pointer-events: none;
+        }
+
+        .empty-label.active {
+            z-index: 9;
+            border-radius: 8px;
+        }
+
+        .empty-label.active .empty-label-description {
+            display: block;
         }
 
         .toggle-controls {
@@ -420,20 +449,20 @@
 
         <div class="section-title">Position</div>
         <div class="control-group">
-            <label>Pos X <input type="number" class="value-input" id="panXInput" value="0.00" step="0.1"></label>
-            <input type="range" id="panX" min="-10" max="10" value="0" step="0.1">
+            <label>Pos X <input type="number" class="value-input" id="panXInput" value="0.000" step="0.001"></label>
+            <input type="range" id="panX" min="-10" max="10" value="0" step="0.001">
         </div>
         <div class="control-group">
-            <label>Pos Y <input type="number" class="value-input" id="panYInput" value="0.00" step="0.1"></label>
-            <input type="range" id="panY" min="-10" max="10" value="0" step="0.1">
+            <label>Pos Y <input type="number" class="value-input" id="panYInput" value="0.000" step="0.001"></label>
+            <input type="range" id="panY" min="-10" max="10" value="0" step="0.001">
         </div>
         <button class="button" id="resetPosition">Reset Position</button>
 
         <div class="separator"></div>
 
         <div class="control-group">
-            <label>Model Scale <input type="number" class="value-input" id="scaleInput" value="1.00" step="0.01" min="0.01" max="10"></label>
-            <input type="range" id="scale" min="0.01" max="10" value="1" step="0.01">
+            <label>Model Scale <input type="number" class="value-input" id="scaleInput" value="1.000" step="0.001" min="0.01" max="10"></label>
+            <input type="range" id="scale" min="0.01" max="10" value="1" step="0.001">
         </div>
 
         <div class="separator"></div>
@@ -443,24 +472,24 @@
             <label for="autoSpin">Auto-Spin</label>
         </div>
         <div class="control-group" id="spinSpeedGroup" style="display: none;">
-            <label>Spin Speed <input type="number" class="value-input" id="spinSpeedInput" value="1.0" step="0.1" min="-5" max="5"> <span class="value" id="spinDirection">Right</span></label>
-            <input type="range" id="spinSpeed" min="-5" max="5" value="1" step="0.1">
+            <label>Spin Speed <input type="number" class="value-input" id="spinSpeedInput" value="1.000" step="0.001" min="-5" max="5"> <span class="value" id="spinDirection">Right</span></label>
+            <input type="range" id="spinSpeed" min="-5" max="5" value="1" step="0.001">
         </div>
 
         <div class="separator"></div>
 
         <div class="section-title">Base Rotation (Blender-style)</div>
         <div class="control-group">
-            <label>Rotation X <input type="number" class="value-input" id="baseRotXInput" value="0" step="1" min="-180" max="180">°</label>
-            <input type="range" id="baseRotX" min="-180" max="180" value="0" step="1">
+            <label>Rotation X <input type="number" class="value-input" id="baseRotXInput" value="0.000" step="0.001" min="-180" max="180">°</label>
+            <input type="range" id="baseRotX" min="-180" max="180" value="0" step="0.001">
         </div>
         <div class="control-group">
-            <label>Rotation Y <input type="number" class="value-input" id="baseRotYInput" value="0" step="1" min="-180" max="180">°</label>
-            <input type="range" id="baseRotY" min="-180" max="180" value="0" step="1">
+            <label>Rotation Y <input type="number" class="value-input" id="baseRotYInput" value="0.000" step="0.001" min="-180" max="180">°</label>
+            <input type="range" id="baseRotY" min="-180" max="180" value="0" step="0.001">
         </div>
         <div class="control-group">
-            <label>Rotation Z <input type="number" class="value-input" id="baseRotZInput" value="0" step="1" min="-180" max="180">°</label>
-            <input type="range" id="baseRotZ" min="-180" max="180" value="0" step="1">
+            <label>Rotation Z <input type="number" class="value-input" id="baseRotZInput" value="0.000" step="0.001" min="-180" max="180">°</label>
+            <input type="range" id="baseRotZ" min="-180" max="180" value="0" step="0.001">
         </div>
         <button class="button" id="resetBaseRotation">Reset Base Rotation</button>
 
@@ -468,12 +497,12 @@
 
         <div class="section-title">View Rotation</div>
         <div class="control-group">
-            <label>Pitch (X) <input type="number" class="value-input" id="viewRotXInput" value="20" step="1" min="-180" max="180">°</label>
-            <input type="range" id="viewRotX" min="-180" max="180" value="20" step="1">
+            <label>Pitch (X) <input type="number" class="value-input" id="viewRotXInput" value="20.000" step="0.001" min="-180" max="180">°</label>
+            <input type="range" id="viewRotX" min="-180" max="180" value="20" step="0.001">
         </div>
         <div class="control-group">
-            <label>Yaw (Y) <input type="number" class="value-input" id="viewRotYInput" value="30" step="1" min="-180" max="180">°</label>
-            <input type="range" id="viewRotY" min="-180" max="180" value="30" step="1">
+            <label>Yaw (Y) <input type="number" class="value-input" id="viewRotYInput" value="30.000" step="0.001" min="-180" max="180">°</label>
+            <input type="range" id="viewRotY" min="-180" max="180" value="30" step="0.001">
         </div>
         <button class="button" id="resetViewRotation">Reset View Rotation</button>
 
@@ -501,7 +530,7 @@
 
         <div class="control-group">
             <label>Hover Radius Color</label>
-            <input type="color" id="hoverRadiusColor" class="color-picker" value="#00000080">
+            <input type="color" id="hoverRadiusColor" class="color-picker" value="#000000">
         </div>
 
         <div class="control-group">
@@ -591,6 +620,8 @@
         let currentModel = null;
         let empties = [];
         let emptyLabels = [];
+        let activeEmpty = null;
+        let currentHoverIndex = -1;
 
         // State variables
         let viewRotX = 20, viewRotY = 30;
@@ -688,7 +719,7 @@
 
         // Mouse events
         canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // LMB
+            if (e.button === 0 || e.button === 2) { // LMB or RMB
                 isDragging = true;
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
@@ -741,16 +772,17 @@
         });
 
         canvas.addEventListener('mouseup', (e) => {
-            if (e.button === 0) isDragging = false;
+            if (e.button === 0 || e.button === 2) isDragging = false;
             if (e.button === 1) isPanning = false;
         });
 
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const delta = e.deltaY * -0.001;
-            modelScale = Math.max(0.01, Math.min(10, modelScale + delta));
+            const direction = Math.sign(e.deltaY) * -1;
+            const step = e.ctrlKey ? 0.05 : 0.01;
+            modelScale = Math.max(0.01, Math.min(10, modelScale + direction * step));
             scaleSlider.value = modelScale;
-            scaleInput.value = modelScale.toFixed(2);
+            scaleInput.value = modelScale.toFixed(3);
             baseRotationGroup.scale.setScalar(modelScale);
         });
 
@@ -850,7 +882,7 @@
                     const scale = currentDistance / touchStartDistance;
                     modelScale = Math.max(0.01, Math.min(10, touchStartScale * scale));
                     scaleSlider.value = modelScale;
-                    scaleInput.value = modelScale.toFixed(2);
+                    scaleInput.value = modelScale.toFixed(3);
                     baseRotationGroup.scale.setScalar(modelScale);
                 }
 
@@ -860,8 +892,8 @@
                 const panDx = centerX - lastTouchX;
                 const panDy = centerY - lastTouchY;
 
-                panX += panDx * 0.01;
-                panY -= panDy * 0.01;
+                    panX += panDx * 0.01;
+                    panY -= panDy * 0.01;
 
                 lastTouchX = centerX;
                 lastTouchY = centerY;
@@ -1092,7 +1124,7 @@
 
         scaleSlider.oninput = () => {
             modelScale = parseFloat(scaleSlider.value);
-            document.getElementById('scaleValue').textContent = modelScale.toFixed(2);
+            scaleInput.value = modelScale.toFixed(3);
             baseRotationGroup.scale.setScalar(modelScale);
         };
 
@@ -1102,7 +1134,7 @@
             if (!isNaN(value)) {
                 modelScale = Math.max(0.01, Math.min(10, value));
                 scaleSlider.value = modelScale;
-                scaleInput.value = modelScale.toFixed(2);
+                scaleInput.value = modelScale.toFixed(3);
                 baseRotationGroup.scale.setScalar(modelScale);
             }
         };
@@ -1114,7 +1146,7 @@
 
         spinSpeedSlider.oninput = () => {
             spinSpeed = parseFloat(spinSpeedSlider.value);
-            document.getElementById('spinSpeedValue').textContent = spinSpeed.toFixed(1);
+            spinSpeedInput.value = spinSpeed.toFixed(3);
             document.getElementById('spinDirection').textContent = spinSpeed < 0 ? 'Left' : 'Right';
         };
 
@@ -1124,7 +1156,7 @@
             if (!isNaN(value)) {
                 spinSpeed = Math.max(-5, Math.min(5, value));
                 spinSpeedSlider.value = spinSpeed;
-                spinSpeedInput.value = spinSpeed.toFixed(1);
+                spinSpeedInput.value = spinSpeed.toFixed(3);
                 document.getElementById('spinDirection').textContent = spinSpeed < 0 ? 'Left' : 'Right';
             }
         };
@@ -1197,10 +1229,10 @@
         function updatePan() {
             panXSlider.value = panX;
             panYSlider.value = panY;
-            panXInput.value = panX.toFixed(2);
-            panYInput.value = panY.toFixed(2);
-            document.getElementById('panXDisplay').textContent = panX.toFixed(2);
-            document.getElementById('panYDisplay').textContent = panY.toFixed(2);
+            panXInput.value = panX.toFixed(3);
+            panYInput.value = panY.toFixed(3);
+            document.getElementById('panXDisplay').textContent = panX.toFixed(3);
+            document.getElementById('panYDisplay').textContent = panY.toFixed(3);
 
             // Apply pan to panGroup (not camera) - screen space movement
             panGroup.position.set(panX, panY, 0);
@@ -1209,10 +1241,10 @@
         function updateViewRotation() {
             viewRotXSlider.value = viewRotX;
             viewRotYSlider.value = viewRotY;
-            viewRotXInput.value = viewRotX.toFixed(0);
-            viewRotYInput.value = viewRotY.toFixed(0);
-            document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(1);
-            document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(1);
+            viewRotXInput.value = viewRotX.toFixed(3);
+            viewRotYInput.value = viewRotY.toFixed(3);
+            document.getElementById('rotXDisplay').textContent = viewRotX.toFixed(3);
+            document.getElementById('rotYDisplay').textContent = viewRotY.toFixed(3);
 
             // Apply quaternion to viewRotationGroup (like desktop applyRotation)
             viewRotationGroup.quaternion.copy(viewRotationQuat);
@@ -1222,9 +1254,9 @@
             baseRotXSlider.value = baseRotX;
             baseRotYSlider.value = baseRotY;
             baseRotZSlider.value = baseRotZ;
-            baseRotXInput.value = baseRotX.toFixed(0);
-            baseRotYInput.value = baseRotY.toFixed(0);
-            baseRotZInput.value = baseRotZ.toFixed(0);
+            baseRotXInput.value = baseRotX.toFixed(3);
+            baseRotYInput.value = baseRotY.toFixed(3);
+            baseRotZInput.value = baseRotZ.toFixed(3);
 
             baseRotationGroup.rotation.order = 'XYZ';
             baseRotationGroup.rotation.x = baseRotX * Math.PI / 180;
@@ -1236,6 +1268,26 @@
             emptyLabels.forEach(label => label.element.remove());
             emptyLabels = [];
             overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+
+        let projectedEmpties = [];
+
+        function getEmptyDescription(object, gltfNode) {
+            const extras = gltfNode && gltfNode.extras;
+            const userData = object && object.userData;
+            const sources = [userData, userData && userData.gltfExtensions, extras, gltfNode];
+
+            for (const source of sources) {
+                if (!source || typeof source !== 'object') continue;
+
+                const key = Object.keys(source).find((name) => name.toLowerCase() === 'description');
+                if (key !== undefined && source[key] !== null && source[key] !== undefined) {
+                    const description = source[key];
+                    return typeof description === 'string' ? description.trim() : String(description).trim();
+                }
+            }
+
+            return '';
         }
 
         // Load model
@@ -1251,6 +1303,9 @@
                 if (currentModel) {
                     baseRotationGroup.remove(currentModel);
                 }
+
+                activeEmpty = null;
+                projectedEmpties = [];
 
                 currentModel = gltf.scene;
 
@@ -1278,31 +1333,50 @@
 
                 // Method 1: Use scene.traverse (finds most empties)
                 const foundNames = new Set();
+                const foundObjects = new Set();
+                const normalizeEmptyName = (name) => name.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+                const addEmpty = (object, name, rawNode) => {
+                    const displayName = normalizeEmptyName(name);
+                    if (!object || foundObjects.has(object.uuid) || foundNames.has(displayName)) return false;
+
+                    foundObjects.add(object.uuid);
+                    foundNames.add(displayName);
+                    empties.push({
+                        name: displayName,
+                        object: object,
+                        description: getEmptyDescription(object, rawNode)
+                    });
+                    return true;
+                };
+                const rawNodeByName = new Map();
+                if (gltf.parser && gltf.parser.json && gltf.parser.json.nodes) {
+                    gltf.parser.json.nodes.forEach((node) => {
+                        if (node.name) rawNodeByName.set(normalizeEmptyName(node.name), node);
+                    });
+                }
                 gltf.scene.traverse((node) => {
                     if (node.type === 'Object3D' && !node.isMesh && !node.isLight &&
                         !node.isCamera && !node.isBone && node.name) {
-                        empties.push({
-                            name: node.name,
-                            object: node
-                        });
-                        foundNames.add(node.name);
-                        console.log('Found empty via traverse:', node.name);
+                        const rawNode = rawNodeByName.get(normalizeEmptyName(node.name));
+                        if (addEmpty(node, node.name, rawNode)) {
+                            console.log('Found empty via traverse:', node.name);
+                        }
                     }
                 });
 
                 // Method 2: Check raw nodes from GLTF (might find missing empties)
                 if (gltf.parser && gltf.parser.json && gltf.parser.json.nodes) {
                     const promises = gltf.parser.json.nodes.map((node, index) => {
-                        if (node.name && (node.mesh === undefined || node.mesh < 0) && !foundNames.has(node.name)) {
+                        if (node.name && (node.mesh === undefined || node.mesh < 0) &&
+                            !foundNames.has(normalizeEmptyName(node.name))) {
                             // This is an empty in GLTF that wasn't found by traverse
                             // Try to find it in the scene by name
-                            const sceneNode = gltf.scene.getObjectByName(node.name);
+                            const sceneNode = gltf.scene.getObjectByName(node.name) ||
+                                gltf.scene.getObjectByName(node.name.replace(/_/g, ' '));
                             if (sceneNode) {
-                                empties.push({
-                                    name: node.name,
-                                    object: sceneNode
-                                });
-                                console.log('Found empty via parser:', node.name);
+                                if (addEmpty(sceneNode, node.name, node)) {
+                                    console.log('Found empty via parser:', node.name);
+                                }
                             } else {
                                 console.warn('GLTF node', node.name, 'not found in scene, loading manually...');
                                 // Load the node manually using parser
@@ -1310,11 +1384,9 @@
                                     if (object3D) {
                                         // Add to scene so it gets proper world transforms
                                         currentModel.add(object3D);
-                                        empties.push({
-                                            name: node.name,
-                                            object: object3D
-                                        });
-                                        console.log('Manually loaded empty:', node.name);
+                                        if (addEmpty(object3D, node.name, node)) {
+                                            console.log('Manually loaded empty:', node.name);
+                                        }
                                     }
                                 }).catch(err => {
                                     console.error('Failed to load node', node.name, err);
@@ -1343,8 +1415,6 @@
                 const fileName = file ? file.name : url.split('/').pop();
                 statsInfo.innerHTML = `Model: ${fileName}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}`;
                 document.getElementById('modelName').textContent = fileName;
-                document.getElementById('triangles').textContent = Math.floor(triangles).toLocaleString();
-
                 if (file) URL.revokeObjectURL(url);
             }, undefined, (error) => {
                 loading.style.display = 'none';
@@ -1423,6 +1493,7 @@
                 clearEmptyLabels();
 
                 const labelData = [];
+                projectedEmpties = [];
 
                 empties.forEach(empty => {
                     const worldPos = new THREE.Vector3();
@@ -1436,28 +1507,37 @@
                     if (screenPos.z < 1) {
                         const x = (screenPos.x + 1) / 2 * window.innerWidth;
                         const y = (-screenPos.y + 1) / 2 * window.innerHeight;
+                        const fontSize = window.innerWidth <= 768 ? 14 : 12;
+                        overlayCtx.font = `${fontSize}px 'SF Mono', 'Consolas', monospace`;
+                        const textMetrics = overlayCtx.measureText(empty.name);
+                        const textWidth = textMetrics.width;
+                        const textHeight = fontSize;
 
                         labelData.push({
                             name: empty.name,
+                            empty: empty,
+                            description: empty.description,
                             x: x,
                             y: y,
-                            depth: screenPos.z
+                            depth: screenPos.z,
+                            hoverRadiusX: textWidth / 2 + 8,
+                            hoverRadiusY: textHeight / 2 + 6
                         });
+                        projectedEmpties.push(labelData[labelData.length - 1]);
                     }
                 });
 
                 // Find closest hovered empty (for mouse and touch)
                 let closestIndex = -1;
                 let closestDepth = 1000;
-                const isMobile = window.innerWidth <= 768;
-                const detectionRadius = isMobile ? emptyHoverRadius / 2 : emptyHoverRadius;
-
                 labelData.forEach((data, i) => {
                     const dx = mouseX - data.x;
                     const dy = mouseY - data.y;
-                    const distSq = dx * dx + dy * dy;
+                    const ellipseDistance =
+                        (dx * dx) / (data.hoverRadiusX * data.hoverRadiusX) +
+                        (dy * dy) / (data.hoverRadiusY * data.hoverRadiusY);
 
-                    if (distSq <= detectionRadius * detectionRadius) {
+                    if (ellipseDistance <= 1) {
                         if (data.depth < closestDepth) {
                             closestDepth = data.depth;
                             closestIndex = i;
@@ -1465,18 +1545,29 @@
                     }
                 });
 
+                // Desktop activates an empty by hover; mobile activates it by tap.
+                if (window.innerWidth > 768 || isTapActive) {
+                    activeEmpty = closestIndex >= 0 ? labelData[closestIndex].empty : null;
+                }
+
                 // Clear overlay canvas
                 overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
                 // Draw hover radius for ALL empties if debug is enabled
                 if (showDebug) {
-                    const isMobile = window.innerWidth <= 768;
-                    const radius = isMobile ? emptyHoverRadius / 2 : emptyHoverRadius;
                     overlayCtx.fillStyle = hoverRadiusColor;
 
                     labelData.forEach((data) => {
                         overlayCtx.beginPath();
-                        overlayCtx.arc(data.x, data.y, radius, 0, Math.PI * 2);
+                        overlayCtx.ellipse(
+                            data.x,
+                            data.y,
+                            data.hoverRadiusX,
+                            data.hoverRadiusY,
+                            0,
+                            0,
+                            Math.PI * 2
+                        );
                         overlayCtx.fill();
                     });
                 }
@@ -1485,8 +1576,16 @@
                 labelData.forEach((data, i) => {
                     const label = document.createElement('div');
                     label.className = 'empty-label';
-                    label.textContent = data.name;
-
+                    const name = document.createElement('div');
+                    name.textContent = data.name;
+                    label.appendChild(name);
+                    if (data.empty === activeEmpty && data.description) {
+                        label.classList.add('active');
+                        const description = document.createElement('div');
+                        description.className = 'empty-label-description';
+                        description.textContent = data.description;
+                        label.appendChild(description);
+                    }
                     // Calculate text dimensions to center properly
                     const tempSpan = document.createElement('span');
                     tempSpan.style.visibility = 'hidden';
@@ -1500,8 +1599,8 @@
                     document.body.removeChild(tempSpan);
 
                     // Center both horizontally and vertically
-                    label.style.left = (data.x - textWidth / 2) + 'px';
-                    label.style.top = (data.y - textHeight / 2) + 'px';
+                    label.style.left = (data.x - data.hoverRadiusX) + 'px';
+                    label.style.top = (data.y - data.hoverRadiusY) + 'px';
 
                     const isHovered = (i === closestIndex);
                     label.style.color = isHovered ? emptyHoverColor : emptyLabelColor;
@@ -1512,7 +1611,10 @@
                     document.body.appendChild(label);
                     emptyLabels.push({ element: label, data: data });
                 });
+                currentHoverIndex = closestIndex;
             } else {
+                currentHoverIndex = -1;
+                projectedEmpties = [];
                 clearEmptyLabels();
             }
 
