@@ -37,6 +37,7 @@
 
         .controls {
             position: fixed;
+            z-index: 1000; /* above the 3D empty labels (10..95) */
             top: 20px;
             right: 20px;
             background: rgba(30, 41, 59, 0.95);
@@ -256,8 +257,109 @@
             -moz-appearance: textfield;
         }
 
+        .hint-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            box-sizing: border-box;
+            max-width: min(320px, calc(100vw - 40px));
+            padding: 14px 40px 12px 16px;
+            /* Подсказка не должна перехватывать управление моделью: тапы и
+               драги проходят сквозь неё к канвасу, кликабелен только крестик. */
+            pointer-events: none;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(248, 250, 252, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            color: #F8FAFC;
+            font-size: 13px;
+            line-height: 1.45;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+        }
+
+        .hint-panel.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+        }
+
+        .hint-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #F8FAFC;
+            margin-bottom: 8px;
+            padding-right: 4px;
+        }
+
+        .hint-title span {
+            color: #38BDF8;
+        }
+
+        .hint-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .hint-list li {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .hint-list .key {
+            flex: 0 0 40%;
+            color: #22D3EE;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 11px;
+        }
+
+        .hint-list .act {
+            flex: 1 1 auto;
+            color: #CBD5E1;
+        }
+
+        .hint-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            background: none;
+            border: none;
+            color: #94A3B8;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            border-radius: 6px;
+            pointer-events: auto;
+        }
+
+        .hint-close:hover {
+            color: #F8FAFC;
+            background: rgba(248, 250, 252, 0.08);
+        }
+
+        .hint-foot {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(248, 250, 252, 0.1);
+            font-size: 11px;
+            color: #64748B;
+        }
+
         .debug {
             position: fixed;
+            z-index: 999;
             bottom: 20px;
             left: 20px;
             background: rgba(30, 41, 59, 0.9);
@@ -298,17 +400,23 @@
             position: absolute;
             z-index: 7;
             box-sizing: border-box;
-            padding: 4px 8px;
+            /* padding/border in em -> the whole pill scales with its font-size,
+               which the render loop drives from model size + camera distance */
+            padding: 0.32em 0.7em;
             font-size: 12px;
+            line-height: 1.25;
             color: #FFFF00;
             font-family: 'SF Mono', 'Consolas', monospace;
             pointer-events: none;
             background: rgba(15, 23, 42, 0.94);
-            border: 1px solid rgba(34, 211, 238, 0.45);
+            border: 0.08em solid rgba(34, 211, 238, 0.45);
             border-radius: 999px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 0.08em 0.08em 0.17em rgba(0,0,0,0.8);
             cursor: pointer;
             transition: color 0.1s;
+            white-space: nowrap;
+            /* stay centered on the empty even when the description pops out */
+            transform: translate(-50%, -50%);
         }
 
         .empty-label.hovered {
@@ -316,26 +424,33 @@
             border-color: rgba(34, 211, 238, 0.8);
         }
 
-        .empty-label-description {
+        .empty-label > div:first-child {
+            max-width: 60vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .empty-tooltip {
+            position: fixed;
+            z-index: 96;
             display: none;
-            margin-top: 2px;
-            max-width: min(360px, calc(100vw - 32px));
-            padding: 6px 8px;
+            box-sizing: border-box;
+            /* max-content = одна строка, пока влезает; перенос только по границе 72vw */
+            width: max-content;
+            max-width: min(26em, 72vw);
+            padding: 0.55em 0.7em;
+            transform: translate(-50%, 0);
             color: #E2E8F0;
-            font-size: 12px;
+            background: rgba(15, 23, 42, 0.96);
+            border: 0.08em solid rgba(34, 211, 238, 0.45);
+            border-radius: 0.6em;
+            font-family: 'SF Mono', 'Consolas', monospace;
             line-height: 1.4;
-            text-align: center;
+            text-align: left;
             white-space: pre-wrap;
+            overflow-wrap: anywhere;
             pointer-events: none;
-        }
-
-        .empty-label.active {
-            z-index: 9;
-            border-radius: 8px;
-        }
-
-        .empty-label.active .empty-label-description {
-            display: block;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
         }
 
         .toggle-controls {
@@ -366,6 +481,14 @@
 
         /* Mobile adaptations */
         @media (max-width: 768px) {
+            .hint-panel {
+                top: 10px;
+                left: 10px;
+                max-width: calc(100vw - 20px);
+                font-size: 12px;
+                padding: 12px 36px 10px 12px;
+            }
+
             .controls {
                 top: auto;
                 bottom: 90px;
@@ -412,8 +535,8 @@
             }
 
             .empty-label {
-                font-size: 14px;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+                /* font-size is driven per-frame from model size + distance */
+                text-shadow: 0.14em 0.14em 0.28em rgba(0,0,0,0.9);
             }
         }
     </style>
@@ -421,6 +544,13 @@
 <body>
     <canvas id="canvas"></canvas>
     <canvas id="overlayCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5;"></canvas>
+
+    <div class="hint-panel" id="hintPanel" role="status" aria-live="polite">
+        <button class="hint-close" id="hintClose" aria-label="Скрыть подсказку">✕</button>
+        <div class="hint-title" id="hintTitle">Управление</div>
+        <ul class="hint-list" id="hintList"></ul>
+        <div class="hint-foot" id="hintFoot">Скрыть — нажатие в любом месте</div>
+    </div>
 
     <div class="controls hidden">
         <h2>3D Model Viewer</h2>
@@ -545,6 +675,7 @@
             <div>FPS: <span id="fps">0</span></div>
             <div>Frame Time: <span id="frameTime">0.00</span> ms</div>
             <div>Render: <span id="renderTime">0.00</span> ms</div>
+            <div>Labels: <span id="labelStats">0</span></div>
         </div>
     </div>
 
@@ -583,13 +714,134 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambientLight);
+        // ------------------------------------------------------------------
+        // Lighting: direct sunlight (hard sun + sky IBL + a bit of bounce)
+        // ------------------------------------------------------------------
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
-        directionalLight.position.set(0, 1, 1);
-        scene.add(directionalLight);
+        // Direction the sun is coming FROM (upper right, slightly in front).
+        const SUN_DIR = new THREE.Vector3(4.5, 6.5, 3.5).normalize();
+        const SUN_COLOR = 0xfff2dc;      // slightly warm midday sun
+        const SUN_INTENSITY = 3.0;
+        const SKY_ZENITH = new THREE.Color(0x2e6fd0).multiplyScalar(1.5);
+        const SKY_HORIZON = new THREE.Color(0xcfe2f7).multiplyScalar(1.25);
+        const SKY_GROUND = new THREE.Color(0x9a8465).multiplyScalar(0.6);
+        const SUN_DISC_GAIN = 45;        // HDR brightness of the sun blob in the env map
+
+        // Tone mapping: keeps sun highlights from clipping and makes metals readable.
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Procedural sunny sky -> used as IBL (scene.environment).
+        // This is what makes metallic / rough materials visible at all: without an
+        // environment map a metal has nothing to reflect and renders nearly black.
+        function createSunnySkyEnvironment() {
+            const envScene = new THREE.Scene();
+            const R = 50;
+
+            const skyMat = new THREE.ShaderMaterial({
+                side: THREE.BackSide,
+                depthWrite: false,
+                uniforms: {
+                    topColor: { value: SKY_ZENITH },
+                    horizonColor: { value: SKY_HORIZON },
+                    groundColor: { value: SKY_GROUND }
+                },
+                vertexShader: /* glsl */`
+                    varying vec3 vDir;
+                    void main() {
+                        vDir = normalize(position);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: /* glsl */`
+                    uniform vec3 topColor;
+                    uniform vec3 horizonColor;
+                    uniform vec3 groundColor;
+                    varying vec3 vDir;
+                    void main() {
+                        float h = clamp(vDir.y, -1.0, 1.0);
+                        vec3 sky = mix(horizonColor, topColor, pow(max(h, 0.0), 0.55));
+                        vec3 ground = mix(horizonColor, groundColor, pow(max(-h, 0.0), 0.5));
+                        gl_FragColor = vec4(mix(ground, sky, step(0.0, h)), 1.0);
+                    }
+                `
+            });
+
+            envScene.add(new THREE.Mesh(new THREE.SphereGeometry(R, 48, 24), skyMat));
+
+            // Bright sun blob: gives a hot specular highlight on glossy/metal surfaces.
+            const sunDisc = new THREE.Mesh(
+                new THREE.SphereGeometry(R * 0.11, 24, 12),
+                new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(1.0, 0.95, 0.85).multiplyScalar(SUN_DISC_GAIN)
+                })
+            );
+            sunDisc.position.copy(SUN_DIR).multiplyScalar(R * 0.9);
+            envScene.add(sunDisc);
+
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            const envRT = pmrem.fromScene(envScene, 0.02, 0.1, R * 2);
+            pmrem.dispose();
+
+            envScene.traverse((o) => {
+                if (o.isMesh) {
+                    o.geometry.dispose();
+                    o.material.dispose();
+                }
+            });
+
+            return envRT.texture;
+        }
+
+        scene.environment = createSunnySkyEnvironment();
+
+        // --- Sun ---
+        const sun = new THREE.DirectionalLight(SUN_COLOR, SUN_INTENSITY);
+        sun.castShadow = true;
+        sun.shadow.mapSize.set(isMobileDevice ? 1024 : 2048, isMobileDevice ? 1024 : 2048);
+        sun.shadow.camera.near = 0.1;
+        sun.shadow.camera.far = 100;
+        sun.shadow.bias = -0.0004;
+        sun.shadow.normalBias = 0.02;
+        scene.add(sun);
+        scene.add(sun.target); // target has to be in the graph to get updated
+
+        // Sky/ground bounce (soft ambient, replaces the flat AmbientLight)
+        const hemiLight = new THREE.HemisphereLight(0xbcd8ff, 0x8a7355, 0.35);
+        scene.add(hemiLight);
+
+        // Weak cool fill from the shadow side so shadows never go pure black
+        const fillLight = new THREE.DirectionalLight(0x9fc4ff, 0.25);
+        fillLight.position.set(-SUN_DIR.x, SUN_DIR.y * 0.4, -SUN_DIR.z);
+        scene.add(fillLight);
+
+        // Fit sun distance + shadow frustum to the current model (radius in world units)
+        let currentRadius = 1;
+
+        function updateSunForRadius(radius) {
+            const dist = Math.max(radius * 4, 8);
+            sun.position.copy(SUN_DIR).multiplyScalar(dist);
+            sun.target.position.set(0, 0, 0);
+            sun.target.updateMatrixWorld();
+
+            const cam = sun.shadow.camera;
+            const extent = Math.max(radius * 2.2, 2);
+            cam.left = -extent;
+            cam.right = extent;
+            cam.top = extent;
+            cam.bottom = -extent;
+            cam.near = Math.max(dist - radius * 3, 0.05);
+            cam.far = dist + radius * 4;
+            cam.updateProjectionMatrix();
+
+            // Depth bias has to scale with the model, otherwise small models get acne
+            sun.shadow.normalBias = Math.max(radius * 0.02, 0.005);
+        }
+
+        updateSunForRadius(currentRadius);
 
         // Scene graph hierarchy matching desktop OpenGL matrix order:
         // Desktop: Translate(pan) * Translate(0,0,-8) * Rotate(view) * Rotate(base) * Scale
@@ -618,6 +870,7 @@
 
         // Model itself
         let currentModel = null;
+        let currentCentering = null; // wrapper group that centers the model
         let empties = [];
         let emptyLabels = [];
         let activeEmpty = null;
@@ -638,7 +891,7 @@
         let emptyHoverColor = '#00FFFF';
         let hoverRadiusColor = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
         let emptyHoverRadius = 20;
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let isMobile = isMobileDevice;
         if (isMobile) {
             emptyHoverRadius = 80; // Larger radius for mobile
         }
@@ -672,14 +925,91 @@
             toggleBtn.textContent = controlsPanel.classList.contains('hidden') ? '☰' : '✕';
 
             toggleBtn.addEventListener('click', () => {
-                console.log('Toggle button clicked!');
                 controlsPanel.classList.toggle('hidden');
                 toggleBtn.textContent = controlsPanel.classList.contains('hidden') ? '☰' : '✕';
-                console.log('Panel hidden:', controlsPanel.classList.contains('hidden'));
             });
+
+            // Tap/click anywhere outside the panel (canvas, labels, empty space) closes it.
+            // Capture phase, so it also works when a target swallows the event later.
+            document.addEventListener('pointerdown', (e) => {
+                if (controlsPanel.classList.contains('hidden')) return;
+                if (controlsPanel.contains(e.target) || toggleBtn.contains(e.target)) return;
+                controlsPanel.classList.add('hidden');
+                toggleBtn.textContent = '☰';
+            }, true);
         } else {
             console.error('toggleBtn or controlsPanel not found!');
         }
+
+        // --- Control hints (platform aware) ---------------------------------
+        // Показываются при открытии страницы, скрываются по крестику, по нажатию
+        // в любом месте или по таймеру.
+        (function setupControlHints() {
+            const panel = document.getElementById('hintPanel');
+            const list = document.getElementById('hintList');
+            const closeBtn = document.getElementById('hintClose');
+            const title = document.getElementById('hintTitle');
+            const foot = document.getElementById('hintFoot');
+            if (!panel || !list) return;
+
+            const HINT_AUTOHIDE_MS = 15000;
+
+            // Тач определяем и по UA, и по возможностям указателя: гибридные
+            // устройства (ноут с тачскрином) получают подсказки под сенсор.
+            const touchUI = isMobileDevice || window.matchMedia('(pointer: coarse)').matches;
+
+            const rows = touchUI ? [
+                ['1 палец', 'вращение модели'],
+                ['2 пальца', 'панорама'],
+                ['Щипок', 'масштаб'],
+                ['Тап по подписи', 'описание детали'],
+                ['☰', 'панель настроек']
+            ] : [
+                ['ЛКМ / ПКМ', 'вращение модели'],
+                ['СКМ / Shift + ЛКМ', 'панорама'],
+                ['Колесо', 'масштаб (с Ctrl точнее)'],
+                ['Наведение на подпись', 'описание детали'],
+                ['☰', 'панель настроек']
+            ];
+
+            title.textContent = touchUI ? 'Управление · сенсорный экран' : 'Управление · мышь и клавиатура';
+            foot.textContent = 'Скрыть — нажатие в любом месте';
+            list.textContent = '';
+
+            rows.forEach(([key, action]) => {
+                const li = document.createElement('li');
+                const keyEl = document.createElement('span');
+                keyEl.className = 'key';
+                keyEl.textContent = key;
+                const actEl = document.createElement('span');
+                actEl.className = 'act';
+                actEl.textContent = action;
+                li.append(keyEl, actEl);
+                list.appendChild(li);
+            });
+
+            let hideTimer = 0;
+            const hide = () => {
+                window.clearTimeout(hideTimer);
+                hideTimer = 0;
+                panel.classList.remove('visible');
+            };
+
+            requestAnimationFrame(() => panel.classList.add('visible'));
+            if (HINT_AUTOHIDE_MS > 0) {
+                hideTimer = window.setTimeout(hide, HINT_AUTOHIDE_MS);
+            }
+
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hide();
+            });
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!panel.classList.contains('visible')) return;
+                hide();
+            }, true);
+        })();
 
         // Get all control elements
         const panXSlider = document.getElementById('panX');
@@ -788,7 +1118,7 @@
             modelScale = Math.max(0.01, Math.min(10, modelScale + direction * step));
             scaleSlider.value = modelScale;
             scaleInput.value = modelScale.toFixed(3);
-            baseRotationGroup.scale.setScalar(modelScale);
+            applyModelScale();
         });
 
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -888,7 +1218,7 @@
                     modelScale = Math.max(0.01, Math.min(10, touchStartScale * scale));
                     scaleSlider.value = modelScale;
                     scaleInput.value = modelScale.toFixed(3);
-                    baseRotationGroup.scale.setScalar(modelScale);
+                    applyModelScale();
                 }
 
                 // Two fingers - pan (center point movement)
@@ -1130,7 +1460,7 @@
         scaleSlider.oninput = () => {
             modelScale = parseFloat(scaleSlider.value);
             scaleInput.value = modelScale.toFixed(3);
-            baseRotationGroup.scale.setScalar(modelScale);
+            applyModelScale();
         };
 
         // Number input events - Scale
@@ -1140,7 +1470,7 @@
                 modelScale = Math.max(0.01, Math.min(10, value));
                 scaleSlider.value = modelScale;
                 scaleInput.value = modelScale.toFixed(3);
-                baseRotationGroup.scale.setScalar(modelScale);
+                applyModelScale();
             }
         };
 
@@ -1269,6 +1599,12 @@
             baseRotationGroup.rotation.z = baseRotZ * Math.PI / 180;
         }
 
+        function applyModelScale() {
+            baseRotationGroup.scale.setScalar(modelScale);
+            // Shadow frustum follows the scaled model, otherwise big models get clipped shadows
+            updateSunForRadius(currentRadius * modelScale);
+        }
+
         function clearEmptyLabels() {
             emptyLabels.forEach(label => label.element.remove());
             emptyLabels = [];
@@ -1276,6 +1612,11 @@
         }
 
         let projectedEmpties = [];
+
+        // Persistent description tooltip (created once, reused every frame)
+        const tooltipEl = document.createElement('div');
+        tooltipEl.className = 'empty-tooltip';
+        document.body.appendChild(tooltipEl);
 
         function getEmptyDescription(object, gltfNode) {
             const extras = gltfNode && gltfNode.extras;
@@ -1304,8 +1645,11 @@
             loader.load(url, (gltf) => {
                 loading.style.display = 'none';
 
-                // Remove old model
-                if (currentModel) {
+                // Remove old model (it lives inside its own centering group)
+                if (currentCentering) {
+                    baseRotationGroup.remove(currentCentering);
+                    currentCentering = null;
+                } else if (currentModel) {
                     baseRotationGroup.remove(currentModel);
                 }
 
@@ -1322,6 +1666,16 @@
                 console.log('Model center:', center);
                 console.log('Model size:', size);
 
+                // Fit the sunlight and its shadow frustum to the loaded model
+                currentRadius = Math.max(size.length() * 0.5, 0.001);
+                updateSunForRadius(currentRadius * modelScale);
+                currentModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
                 // Create centering group that offsets the model to put its center at origin
                 const centeringGroup = new THREE.Group();
                 centeringGroup.position.set(-center.x, -center.y, -center.z);
@@ -1332,6 +1686,7 @@
 
                 // Add centering group to base rotation group
                 baseRotationGroup.add(centeringGroup);
+                currentCentering = centeringGroup;
 
                 // Extract empties - search in raw gltf.parser data AND scene.traverse
                 empties = [];
@@ -1418,7 +1773,7 @@
                 });
 
                 const fileName = file ? file.name : url.split('/').pop();
-                statsInfo.innerHTML = `Model: ${fileName}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}`;
+                statsInfo.innerHTML = `Model: ${fileName}<br>Triangles: ${Math.floor(triangles).toLocaleString()}<br>Empties: ${empties.length}<br>Radius: ${currentRadius.toFixed(3)}`;
                 document.getElementById('modelName').textContent = fileName;
                 if (file) URL.revokeObjectURL(url);
             }, undefined, (error) => {
@@ -1462,6 +1817,26 @@
         // Set initial background
         scene.background = clearColor;
 
+        // --- Empty label tuning ---------------------------------------------
+        // Label height in world units, as a fraction of the model radius; the pixel
+        // size then follows the projection at the empty's distance to the camera.
+        const LABEL_WORLD_FRACTION = isMobileDevice ? 0.18 : 0.08;
+        const LABEL_SIZE_SCALE = 0.2;          // все размеры подписи в 5 раз меньше
+        const LABEL_MIN_FONT_PX = isMobileDevice ? 5 : 4; // только порог читаемости
+        // Жёсткий потолок в пикселях: подписи не раздуваются вместе с моделью.
+        const LABEL_MAX_FONT_PX = isMobileDevice ? 10 : 9;
+        // Потолок относительно того, как модель выглядит на экране: подпись не может
+        // быть больше этой доли проецируемого радиуса модели (иначе мелкая модель
+        // тонет под плашками).
+        const LABEL_MAX_MODEL_FRACTION = 0.16;
+        const LABEL_HIDE_BELOW_PX = 2;         // мельче — подпись не рисуем вовсе
+        const LABEL_DEPTH_FADE = 0.45;         // 0 = no fade, 1 = farthest label fully transparent
+        // Описание читается независимо от размера плашки: свой диапазон кегля
+        const TOOLTIP_MIN_FONT_PX = isMobileDevice ? 12 : 11;
+        const TOOLTIP_MAX_FONT_PX = 16;
+        // Hit area never shrinks with the label, otherwise small labels are untappable
+        const LABEL_HIT_MIN_RADIUS_PX = isMobileDevice ? 26 : 10;
+
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
@@ -1500,6 +1875,30 @@
                 const labelData = [];
                 projectedEmpties = [];
 
+                // Labels are billboards attached to the empty: their *world* size is
+                // a fraction of the model radius, and the on-screen size is that world
+                // size projected through the camera at the empty's own depth.
+                //   px = worldSize * (viewportHalfHeight / (tan(fov/2) * distance))
+                const tanHalfFov = Math.tan(camera.fov * Math.PI / 360);
+                const viewportHalfH = window.innerHeight * 0.5;
+                const worldRadius = Math.max(currentRadius * modelScale, 0.001);
+                const labelWorldSize = worldRadius * LABEL_WORLD_FRACTION;
+                const pxPerWorldUnit = (distance) =>
+                    viewportHalfH / (tanHalfFov * Math.max(distance, 0.001));
+
+                // The model is centered on the origin, so its distance to the camera is
+                // simply |camera.position|. Its projected radius sets the hard ceiling for
+                // the label size: a model that looks small on screen gets small labels.
+                const modelPxRadius = Math.max(
+                    worldRadius * pxPerWorldUnit(camera.position.length()),
+                    0.001
+                );
+                const maxFontPx = Math.max(
+                    Math.min(modelPxRadius * LABEL_MAX_MODEL_FRACTION, LABEL_MAX_FONT_PX),
+                    0.5
+                );
+                const minFontPx = Math.min(LABEL_MIN_FONT_PX, maxFontPx);
+
                 empties.forEach(empty => {
                     const worldPos = new THREE.Vector3();
                     empty.object.getWorldPosition(worldPos);
@@ -1512,11 +1911,26 @@
                     if (screenPos.z < 1) {
                         const x = (screenPos.x + 1) / 2 * window.innerWidth;
                         const y = (-screenPos.y + 1) / 2 * window.innerHeight;
-                        const fontSize = window.innerWidth <= 768 ? 14 : 12;
-                        overlayCtx.font = `${fontSize}px 'SF Mono', 'Consolas', monospace`;
-                        const textMetrics = overlayCtx.measureText(empty.name);
-                        const textWidth = textMetrics.width;
-                        const textHeight = fontSize;
+
+                        const camDist = Math.max(worldPos.distanceTo(camera.position), 0.001);
+                        // Base size is 5x smaller (LABEL_SIZE_SCALE) and there is no fixed
+                        // upper clamp any more: the pill keeps growing linearly with model
+                        // size and with proximity to the camera. It is only bounded by the
+                        // model's own projected size, so it can never swamp the model.
+                        const fontSize = Math.max(
+                            Math.min(
+                                labelWorldSize * pxPerWorldUnit(camDist) * LABEL_SIZE_SCALE,
+                                maxFontPx
+                            ),
+                            minFontPx
+                        );
+
+                        // Below this the pill is a 1-2px speck, i.e. visual dirt on the
+                        // model: better to drop the label than to draw a dot.
+                        if (fontSize < LABEL_HIDE_BELOW_PX) return;
+
+                        overlayCtx.font = `${fontSize.toFixed(2)}px 'SF Mono', 'Consolas', monospace`;
+                        const textWidth = overlayCtx.measureText(empty.name).width;
 
                         labelData.push({
                             name: empty.name,
@@ -1525,16 +1939,26 @@
                             x: x,
                             y: y,
                             depth: screenPos.z,
-                            hoverRadiusX: textWidth / 2 + 8,
-                            hoverRadiusY: textHeight / 2 + 6
+                            camDist: camDist,
+                            fontSize: fontSize,
+                            // visual size of the pill...
+                            pillRadiusX: textWidth / 2 + fontSize * 0.75,
+                            pillRadiusY: fontSize * 0.95,
+                            // ...and a hit area that never shrinks with it
+                            hoverRadiusX: Math.max(textWidth / 2 + fontSize * 0.75, LABEL_HIT_MIN_RADIUS_PX),
+                            hoverRadiusY: Math.max(fontSize * 0.95, LABEL_HIT_MIN_RADIUS_PX * 0.6),
+                            zIndex: 10,
+                            opacity: 1
                         });
                         projectedEmpties.push(labelData[labelData.length - 1]);
                     }
                 });
 
-                // Find closest hovered empty (for mouse and touch)
+                // Find closest hovered empty (for mouse and touch).
+                // camDist instead of NDC depth: the labels are now sized by it, so
+                // picking and drawing order use the same metric.
                 let closestIndex = -1;
-                let closestDepth = 1000;
+                let closestDepth = Infinity;
                 labelData.forEach((data, i) => {
                     const dx = mouseX - data.x;
                     const dy = mouseY - data.y;
@@ -1543,8 +1967,8 @@
                         (dy * dy) / (data.hoverRadiusY * data.hoverRadiusY);
 
                     if (ellipseDistance <= 1) {
-                        if (data.depth < closestDepth) {
-                            closestDepth = data.depth;
+                        if (data.camDist < closestDepth) {
+                            closestDepth = data.camDist;
                             closestIndex = i;
                         }
                     }
@@ -1554,6 +1978,39 @@
                 if (window.innerWidth > 768 || isTapActive) {
                     activeEmpty = closestIndex >= 0 ? labelData[closestIndex].empty : null;
                 }
+
+                // --- Layering & depth fade -----------------------------------
+                // Nearer labels stack on top of farther ones; the hovered one always
+                // wins. Farther labels fade a little so the ordering reads even when
+                // their pills overlap.
+                let minCamDist = Infinity;
+                let maxCamDist = -Infinity;
+                labelData.forEach((data) => {
+                    if (data.camDist < minCamDist) minCamDist = data.camDist;
+                    if (data.camDist > maxCamDist) maxCamDist = data.camDist;
+                });
+                const camDistSpan = maxCamDist - minCamDist;
+
+                // far -> near, so the nearest label ends up with the highest z-index
+                const stacking = labelData
+                    .map((_, i) => i)
+                    .sort((a, b) => labelData[b].camDist - labelData[a].camDist);
+                stacking.forEach((index, rank) => {
+                    const data = labelData[index];
+                    data.zIndex = Math.min(10 + rank, 90); // keep labels below the UI panels
+                    const t = camDistSpan > 0.001 ? (data.camDist - minCamDist) / camDistSpan : 0;
+                    data.opacity = 1 - LABEL_DEPTH_FADE * t;
+                });
+                if (closestIndex >= 0) {
+                    const data = labelData[closestIndex];
+                    data.zIndex = 95;
+                    data.opacity = 1;
+                }
+
+                // --- Declutter -------------------------------------------------
+                // Подписи НЕ скрываются: все эмпти видны всегда, порядок наложения
+                // задаётся z-index по глубине (ближние выше), см. блок выше.
+
 
                 // Clear overlay canvas
                 overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
@@ -1567,8 +2024,9 @@
                         overlayCtx.ellipse(
                             data.x,
                             data.y,
-                            data.hoverRadiusX,
-                            data.hoverRadiusY,
+                            // draw the actual pill footprint, not the padded hit area
+                            data.pillRadiusX,
+                            data.pillRadiusY,
                             0,
                             0,
                             Math.PI * 2
@@ -1581,31 +2039,17 @@
                 labelData.forEach((data, i) => {
                     const label = document.createElement('div');
                     label.className = 'empty-label';
+                    // The pill (padding, border, radius, inner text) scales with font-size,
+                    // which came from model size and this empty's distance to the camera.
+                    label.style.fontSize = data.fontSize.toFixed(2) + 'px';
+                    label.style.left = data.x.toFixed(2) + 'px';
+                    label.style.top = data.y.toFixed(2) + 'px';
+                    label.style.zIndex = data.zIndex;
+                    label.style.opacity = data.opacity.toFixed(3);
+
                     const name = document.createElement('div');
                     name.textContent = data.name;
                     label.appendChild(name);
-                    if (data.empty === activeEmpty && data.description) {
-                        label.classList.add('active');
-                        const description = document.createElement('div');
-                        description.className = 'empty-label-description';
-                        description.textContent = data.description;
-                        label.appendChild(description);
-                    }
-                    // Calculate text dimensions to center properly
-                    const tempSpan = document.createElement('span');
-                    tempSpan.style.visibility = 'hidden';
-                    tempSpan.style.position = 'absolute';
-                    tempSpan.style.fontFamily = "'SF Mono', 'Consolas', monospace";
-                    tempSpan.style.fontSize = window.innerWidth <= 768 ? '14px' : '12px';
-                    tempSpan.textContent = data.name;
-                    document.body.appendChild(tempSpan);
-                    const textWidth = tempSpan.offsetWidth;
-                    const textHeight = tempSpan.offsetHeight;
-                    document.body.removeChild(tempSpan);
-
-                    // Center both horizontally and vertically
-                    label.style.left = (data.x - data.hoverRadiusX) + 'px';
-                    label.style.top = (data.y - data.hoverRadiusY) + 'px';
 
                     const isHovered = (i === closestIndex);
                     label.style.color = isHovered ? emptyHoverColor : emptyLabelColor;
@@ -1617,10 +2061,60 @@
                     emptyLabels.push({ element: label, data: data });
                 });
                 currentHoverIndex = closestIndex;
+
+                // --- Description tooltip --------------------------------------
+                // Отдельный элемент поверх сцены, а не дочерний у плашки: иначе
+                // ширина тултипа ограничивается шириной узкой пилюли и текст
+                // переносится в вертикальную колбаску.
+                const activeData = activeEmpty
+                    ? labelData.find((d) => d.empty === activeEmpty)
+                    : null;
+
+                if (activeData && activeData.description) {
+                    const tooltipFont = THREE.MathUtils.clamp(
+                        activeData.fontSize * 1.25,
+                        TOOLTIP_MIN_FONT_PX,
+                        TOOLTIP_MAX_FONT_PX
+                    );
+
+                    tooltipEl.textContent = activeData.description;
+                    tooltipEl.style.fontSize = tooltipFont.toFixed(2) + 'px';
+                    tooltipEl.style.display = 'block';
+
+                    // Measure once it is visible, then keep it inside the viewport
+                    const tw = tooltipEl.offsetWidth;
+                    const th = tooltipEl.offsetHeight;
+                    const margin = 8;
+                    const halfW = tw / 2;
+                    const maxLeft = Math.max(margin + halfW, window.innerWidth - margin - halfW);
+                    const left = Math.min(Math.max(activeData.x, margin + halfW), maxLeft);
+
+                    const gap = activeData.pillRadiusY + tooltipFont * 0.45;
+                    let top = activeData.y + gap;
+                    if (top + th > window.innerHeight - margin) {
+                        top = Math.max(margin, activeData.y - gap - th);
+                    }
+
+                    tooltipEl.style.left = left.toFixed(1) + 'px';
+                    tooltipEl.style.top = top.toFixed(1) + 'px';
+                } else {
+                    tooltipEl.style.display = 'none';
+                }
+
+                if (showDebug) {
+                    const labelStats = document.getElementById('labelStats');
+                    if (labelStats) {
+                        const sizes = labelData.map((d) => d.fontSize);
+                        labelStats.textContent = sizes.length
+                            ? `${sizes.length} × ${Math.min(...sizes).toFixed(1)}–${Math.max(...sizes).toFixed(1)} px`
+                            : '0';
+                    }
+                }
             } else {
                 currentHoverIndex = -1;
                 projectedEmpties = [];
                 clearEmptyLabels();
+                tooltipEl.style.display = 'none';
             }
 
             // Render scene
